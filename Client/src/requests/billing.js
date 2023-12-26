@@ -43,15 +43,15 @@ export const getPlanData = () => {
         });
 }
 
-export const cancelSubscription = () => {
-    return axios.post(`${apiUrl}/billing/subscription/cancel`)
+export const cancelSubscription = (feedback) => {
+    return axios.post(`${apiUrl}/billing/subscription/cancel`, {feedback})
         .then((response) => {
             return response.data;
         });
 }
 
-export const deleteSubscription = () => {
-    return axios.post(`${apiUrl}/billing/subscription/delete`)
+export const deleteSubscription = (customerId) => {
+    return axios.post(`${apiUrl}/billing/subscription/delete`, {customerId})
         .then((response) => {
             return response.data;
         });
@@ -59,6 +59,13 @@ export const deleteSubscription = () => {
 
 export const addSubscription = (token) => {
     return axios.post(`${apiUrl}/billing/subscription/add`, {token})
+        .then((response) => {
+            return response.data;
+        });
+}
+
+export const updateSubscription = (token) => {
+    return axios.post(`${apiUrl}/billing/subscription/update`, {token})
         .then((response) => {
             return response.data;
         });

@@ -5,6 +5,7 @@ import { Select } from 'antd';
 import 'react-dates/initialize';
 import 'react-dates/lib/css/_datepicker.css';
 
+import { filterFacebookProfiles } from '../../utils/helpers';
 import { setPost, setPostedArticle } from "../../actions/posts";
 import { startSetChannels } from "../../actions/channels";
 import {
@@ -21,10 +22,10 @@ import {
 } from "../../actions/composer";
 
 import ContentInput from './components/ContentInput';
-import ChannelSelector from './components/ChannelSelector';
 import ChannelsRow from './components/ChannelsRow';
 import DateTimeSelector from './components/DateTimeSelector';
 import FooterSection from './components/FooterSection';
+import SelectAccountModal from './components/SelectAccountsModal';
 
 const { Option } = Select;
 
@@ -33,8 +34,11 @@ class Compose extends React.Component {
   componentDidUpdate() {
     const { updatePublishChannels, publishChannels, channels } = this.props;
 
+    // if there are no publish channels, we populate the array with the selected one
     if (!publishChannels) {
-      updatePublishChannels(channels);
+      channels.forEach(channel => {
+        if (channel.selected) updatePublishChannels(new Set([channel.details.channel_id]));
+      });
     }
   }
 
@@ -44,6 +48,7 @@ class Compose extends React.Component {
       isOpen,
       showSelectAccounts,
       publishChannels,
+      channels,
       content,
       pictures,
       category,
@@ -59,9 +64,9 @@ class Compose extends React.Component {
       setShowSelectAccount,
       setDate,
       setPostAtBestTime,
-      updatePublishChannels,
       setPostNow,
-      onPost
+      onPost,
+      accessLevel
     } = this.props;
 
     return (
@@ -72,11 +77,8 @@ class Compose extends React.Component {
       >
         {
           showSelectAccounts ? (
-            <ChannelSelector
-              publishChannels={publishChannels}
-              showSelectAccounts={showSelectAccounts}
-              updatePublishChannels={updatePublishChannels}
-              setShowSelectAccount={setShowSelectAccount}
+            <SelectAccountModal
+              selectedAccounts={publishChannels}
             />
           ) :
           (
@@ -96,6 +98,7 @@ class Compose extends React.Component {
                 <ChannelsRow
                   publishChannels={publishChannels}
                   setShowSelectAccount={setShowSelectAccount}
+                  channels={channels}
                 />
                 <ContentInput
                   setContent={setContent}
@@ -131,18 +134,16 @@ class Compose extends React.Component {
                       postDate={date ? date : startsAt}
                       postAtBestTime={postAtBestTime}
                       postNow={postNow}
+                      accessLevel={accessLevel}
                     />
                   )
                 }
               </div>
               <FooterSection
                 {...this.props}
-                publishChannels={
-                  publishChannels ?
-                    publishChannels.filter(({ selected }) => selected) :
-                    []
-                }
+                publishChannels={publishChannels}
                 onPost={onPost}
+                accessLevel={accessLevel}
               />
             </div>
           )
@@ -153,12 +154,13 @@ class Compose extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const channels = state.channels.list;
+  const channels = filterFacebookProfiles(state.channels.list);
 
   return {
     channels,
     post: state.posts.post,
     categoryOptions: state.general.composerCategories,
+    accessLevel: state.profile.accessLevel,
     ...state.composer,
   }
 }

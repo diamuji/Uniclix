@@ -33,9 +33,11 @@ Route::prefix("admin")->middleware(["auth:admin"])->group(function(){
 });
 
 Route::get('/', ['as' => 'homepage.index', 'uses' => 'PagesController@index']);
+Route::get('/admin', ['as' => 'homepage.admin', 'uses' => 'PagesController@admin']);
 Route::get('/upgrade', ['as' => 'upgrade', 'uses' => 'PagesController@upgrade']);
 Route::get('/education', ['as' => 'education', 'uses' => 'PagesController@education']);
 Route::get('/pricing', ['as' => 'pricing', 'uses' => 'PagesController@pricing']);
+Route::get('/affiliate', ['as' => 'affiliate', 'uses' => 'PagesController@affiliate']);
 Route::get('/blog', ['as' => 'blog', 'uses' => 'PagesController@blog']);
 Route::get('/social-media-calendar', ['as' => 'products.publisher', 'uses' => 'PagesController@publisher']);
 Route::get('/content-curation-tool', ['as' => 'products.content_curation', 'uses' => 'PagesController@content_curation']);

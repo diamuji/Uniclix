@@ -4,6 +4,21 @@ export const setComposerModal = (startsAt = null, selectedTimezone) => ({
     selectedTimezone
 });
 
+export const setComposerToEdit = (postData) => ({
+    type: 'SET_COMPOSER_TO_EDIT',
+    postData
+});
+
+export const setComposerForArticle = (postData) => ({
+    type: 'SET_COMPOSER_FOR_ARTICLE',
+    postData
+});
+
+export const setComposerForMonitorActivity = (postData) => ({
+    type: 'SET_COMPOSER_FOR_MONITOR_ACTIVITY',
+    postData
+});
+
 export const closeModal = () => ({
     type: 'CLOSE_MODAL'
 });

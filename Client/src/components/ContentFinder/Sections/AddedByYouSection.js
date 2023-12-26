@@ -7,7 +7,8 @@ import { addTopic, removeTopic } from '../../../actions/profile';
 
 class AddedByYouSection extends React.Component {
   static propTypes = {
-    topicsAddedByYou: PropTypes.array.isRequired
+    topicsAddedByYou: PropTypes.array.isRequired,
+    allTopics: PropTypes.array.isRequired
   };
 
   state = {
@@ -15,8 +16,14 @@ class AddedByYouSection extends React.Component {
   }
 
   onAddTopic = () => {
-    this.props.addTopic(this.state.inputValue.toUpperCase());
-    this.setState({ inputValue: '' })
+    const { allTopics, addTopic } = this.props;
+    const { inputValue } = this.state;
+
+    // We avoid the user to enter the same topic more than once
+    if (allTopics.indexOf(inputValue.toUpperCase()) === -1) {
+      addTopic(inputValue.toUpperCase());
+      this.setState({ inputValue: '' })
+    }
   }
 
   onInputChange = (e) => {
@@ -31,7 +38,7 @@ class AddedByYouSection extends React.Component {
     return (
       <div className="topics-added-by-you">
         <Input
-          placeholder="Search interests"
+          placeholder="Add keywords"
           value={inputValue}
           onChange={this.onInputChange}
           onPressEnter={this.onAddTopic}

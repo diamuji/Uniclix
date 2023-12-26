@@ -15,6 +15,8 @@ import { Select } from 'antd';
 import ReactTooltip from 'react-tooltip';
 import { Typography } from '@material-ui/core';
 import Modal from 'react-modal';
+import { PRICING_COOKIE_KEY } from '../../../utils/constants';
+import { getCookie, eraseCookie } from '../../../utils/helpers';
 
 const Option = Select.Option;
 
@@ -50,6 +52,7 @@ class Checkout extends React.Component {
     editCardSetting: false,
     editCardInfo: false,
     deleteCard: false,
+    customerId: '',
     form: {
       cardnumber: '',
       cvc: '',
@@ -181,7 +184,7 @@ class Checkout extends React.Component {
         ...form
       }
     })
-  };
+  }
 
   activeYears = () => {
     const todayDate = new Date();
@@ -227,6 +230,12 @@ class Checkout extends React.Component {
 
       if (status === 200) {
         this.onToken(response)
+        const pricingCookie = getCookie(PRICING_COOKIE_KEY);
+
+        // If the purchase is successful, we delete the cookie
+        if (pricingCookie) {
+          eraseCookie(PRICING_COOKIE_KEY);
+        }
       } else {
         this.setState({
           loading: true,
@@ -278,13 +287,18 @@ class Checkout extends React.Component {
       address_zip: this.state.form.postal,
       address_line1: this.state.form.address_line1
     }, (status, response) => {
-
+      response.plan = this.props.billingPeriod === "annually" ? this.props.planName + "_annual" : this.props.planName;
+      response.trialDays = 0;
+      response.created = new Date().getTime();
+      response.subType = "main"
+      response.couponCode = this.props.billingPeriod === "annually" ? this.state.couponCode : '';
       if (status === 200) {
         addSubscription(response).then(response => {
           this.props.startSetChannels().then(res => {
             this.props.startSetProfile().then(res => {
               this.setState({
-                loading: true
+                loading: true,
+                customerId: response.customer_id,
               });
             });
           })
@@ -308,7 +322,7 @@ class Checkout extends React.Component {
 
   deleteCard = () => {
     this.setLoading(true);
-    deleteSubscription().then(response => {
+    deleteSubscription(this.state.customerId).then(response => {
       this.props.startSetProfile();
       this.setLoading(true);
       this.setState({
@@ -493,7 +507,7 @@ class Checkout extends React.Component {
                                       <img src="/images/card-image.svg"/>
                                     </div>
                                     <div className="common-font col-12 col-md-8">
-                                      {card_type} ended in {this.state.form.exp_year}
+                                      {card_type} ended in {form.cardnumber.substr(form.cardnumber.length - 4)}
                                     </div>
                                     <div className="col-12 col-md-1" >
                                       <div className="edit-icon-spacing" data-for="edit" data-tip data-iscapture='true' data-event-off='click' onClick={() => this.setState({editCardInfo: true, endCardSetting: false})}>
@@ -519,7 +533,7 @@ class Checkout extends React.Component {
                                   <img src="/images/card-image.svg"/>
                                 </div>
                                 <div className="common-font col-12 col-md-9">
-                                  {card_type} ended in {this.state.form.exp_year}
+                                  {card_type} ended in {form.cardnumber.substr(form.cardnumber.length - 4)}
                                 </div>
                                 <div className="icon-spacing col-12 col-md-1">
                                   <i className="fa fa-check" aria-hidden="true" style={{color: '#2D86DA'}}></i>
@@ -645,7 +659,7 @@ class Checkout extends React.Component {
                           onChange={(e) => this.onFieldChange(e)}
                           value={form.postal}
                           name="postal"
-                          placeholder="Zipp Code" />
+                          placeholder="Zip Code" />
                       </div>
                     </div>
                   </div>
@@ -663,11 +677,6 @@ class Checkout extends React.Component {
                             </div>
                           </div>
                           <br />
-                          <div className="row-price new-accounts">
-                          {billingPeriod === "annually" &&  
-                            <p className="disccount-title">20% Discount<span className="disccount-currency">-${Math.round((billingPeriod === "annually" ? plan['Annual Billing'] * 0.2 : plan["Monthly"] * 0.2) * 100.0) / 100.0}</span></p>
-                          }
-                          </div>
                       </div>
                       <div className="order-total table">
                         <div className="row-price">
@@ -677,7 +686,7 @@ class Checkout extends React.Component {
                             <button className="btn-text-pink" onClick={() => onChangePeriod()}>Switch to {billingPeriod === "annually" ? 'monthly' : 'yearly'}</button>
                           </div>
                           <div className="currency-label">
-                            <p>${Math.round((billingPeriod === "annually" ? plan['Annual Billing'] * 0.8 : plan["Monthly"]) * 100.0) / 100.0}</p>
+                            <p>${Math.round((billingPeriod === "annually" ? plan['Annual Billing'] : plan["Monthly"]) * 100.0) / 100.0}</p>
                           </div>
                         </div>
                       </div>
@@ -685,7 +694,7 @@ class Checkout extends React.Component {
                         <input className="discount" placeholder="Add discount code" onChange={(e) => this.setCouponCode(e)}/>
                       </div>
                       {
-                        endCardSetting ?
+                        form.cardnumber != "" ?
                         <button className="btn-blue" onClick={(e) => this.ConfirmOrder(e)}>Confirm order</button>
                         :
                         <button className="btn-blue disabled-btn">Confirm order</button>

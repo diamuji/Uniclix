@@ -1,6 +1,7 @@
 import React from 'react';
 import 'react-dates/initialize';
 import { connect } from "react-redux";
+import { notification } from 'antd';
 
 import AnalyticsContext from './AnalyticsContext';
 import { startSetChannels } from "../../actions/channels";
@@ -12,7 +13,7 @@ import AccountSelector from '../../components/AccountSelector';
 import SocialMediaSelector from '../../components/SocialMediaSelector';
 
 const ACCOUNT_SELECTOR_FILTERS = {
-    'facebook': (account) => account.details.account_type !== 'profile'
+    'facebook': (account) => account.details.account_type === 'page'
 };
 
 class AnalyticsLanding extends React.Component {
@@ -29,7 +30,8 @@ class AnalyticsLanding extends React.Component {
 
         props.allChannels.forEach(({ type }) => {
             // Getting the options for the socialMedia dropdown
-            if (this.socialMediasSelectorOptions.indexOf(type) === -1) {
+            // Hiding linkedin for the moment
+            if (this.socialMediasSelectorOptions.indexOf(type) === -1 && type !== 'linkedin') {
                 this.socialMediasSelectorOptions.push(type);
             }
         });        
@@ -39,8 +41,31 @@ class AnalyticsLanding extends React.Component {
             forbidden: false,
             calendarChange: false,
             loading: props.channelsLoading,
-            selectedAccount: accountSelectorOptions[0].id,
+            selectedAccount: accountSelectorOptions[0] ? accountSelectorOptions[0].id : 0,
             selectedSocialMedia
+        }
+    }
+
+    componentDidMount() {
+        // This will be erased once Linkedin analytics is done
+        if (this.state.selectedSocialMedia === 'linkedin') {
+            notification.warning({
+                message: 'Heads up!',
+                description: "We don't support LinkedIn Analytics currently. You can still use Facebook and Twitter though!",
+                duration: 10
+            });
+            if (this.socialMediasSelectorOptions.length) {
+                const socialMediaToRedirectIndex = this.socialMediasSelectorOptions.findIndex(
+                    sm => sm !== 'linkedin'
+                );
+                if (socialMediaToRedirectIndex !== -1) {
+                    this.props.history.push(`/analytics/${this.socialMediasSelectorOptions[socialMediaToRedirectIndex]}`);
+                } else {
+                    this.props.history.push('/scheduled/posts');
+                }
+            } else {
+                this.props.history.push('/scheduled/posts');
+            }
         }
     }
 

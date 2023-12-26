@@ -222,6 +222,8 @@
     background: #E0E2E9;
     width: 100%;
     z-index: 1000;
+    position: absolute;
+    top: 55px;
 
     span {
         font-weight: bold;
@@ -743,4 +745,17 @@
         align-items: center;
         display: flex;
     }
+}
+
+.minimalist-logo {
+    margin-top: 20px;
+    margin-left: 65px;
+    font-family: sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 35px;
+    line-height: 30px;
+    letter-spacing: 0.27968px;
+    color: #363636;
+    float: left;
 }

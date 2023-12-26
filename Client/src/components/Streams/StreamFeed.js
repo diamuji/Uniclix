@@ -40,6 +40,7 @@ class StreamFeed extends React.Component{
         this.setState(() => ({loading: true}));
         getStreamFeed(streamItem.type, streamItem.network, streamItem.channel_id, streamItem.search_query, "").then((response) => {
             const items = typeof response["data"] !== "undefined" ? response["data"] : response;
+
             let data = items.length ? items[items.length - 1] : "";
             let nextPage = data && typeof(data.id) !== "undefined" ? data.id : "";
             if(typeof(response["paging"]) !== "undefined" 
@@ -66,7 +67,6 @@ class StreamFeed extends React.Component{
             if(errorStatus === 401){
                 error = e.response.data.message;
             }
-            
             this.setState(() => ({loading: false, error, errorStatus}));  
         });
     };

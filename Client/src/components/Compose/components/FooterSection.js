@@ -2,7 +2,10 @@ import React from 'react';
 import { Button } from 'antd';
 import PropTypes from 'prop-types';
 import moment from 'moment';
+import { notification } from 'antd';
 
+import { isOwnerOrAdmin } from '../../../utils/helpers';
+import FunctionModal from '../../Modal';
 import { publish } from '../../../requests/channels';
 
 import Loader from '../../Loader';
@@ -24,6 +27,8 @@ class FooterSection extends React.Component {
     date: PropTypes.string.isRequired,
     postAtBestTime: PropTypes.bool.isRequired,
     postNow: PropTypes.bool.isRequired,
+    channels: PropTypes.array.isRequired,
+    accessLevel: PropTypes.string.isRequired,
     onPost: PropTypes.func
   };
 
@@ -32,13 +37,22 @@ class FooterSection extends React.Component {
   };
 
   canPost = () => {
-    const { content, category, date, publishChannels } = this.props;
+    const { content, category, date, publishChannels, pictures } = this.props;
 
-    return !!content.length && category && date && !!publishChannels.length;
+    return (!!content.length || !!pictures.length) && category && date && !!publishChannels.size;
   };
 
   getPublishType = () => {
-    const { postAtBestTime, postNow } = this.props;
+    let { postAtBestTime, postNow, selectedTimezone, date, accessLevel } = this.props;
+    const publishTime = moment(date).tz(selectedTimezone);
+    const now = moment().tz(selectedTimezone);
+
+    // We want to prevent the mmebers to post now
+    if (publishTime && isOwnerOrAdmin(accessLevel)) {
+      if (publishTime.isSameOrBefore(now)) {
+        postNow = true;
+      }
+    }
 
     return postNow ?
       'now' :
@@ -47,18 +61,30 @@ class FooterSection extends React.Component {
         'date';
   };
 
+  // This is necessary since we are storing the ids of the channels and the
+  // backend expects the whole object
+  getPublishChannels = () => {
+    const { channels, publishChannels } = this.props;
+    const selectedChannels = channels.filter(channel => publishChannels.has(channel.details.channel_id));
+
+    return selectedChannels;
+  }
+
   savePost = () => {
+    const {
+      id,
+      content,
+      pictures,
+      category,
+      selectedTimezone,
+      date,
+      type,
+      articleId = '',
+      closeModal,
+      onPost,
+    } = this.props;
+
     try {
-      const {
-        content,
-        pictures,
-        category,
-        selectedTimezone,
-        date,
-        publishChannels,
-        closeModal,
-        onPost
-      } = this.props;
 
       const scheduled = {
         publishUTCDateTime: date,
@@ -71,11 +97,11 @@ class FooterSection extends React.Component {
         scheduled,
         content,
         images: pictures,
-        publishChannels,
-        type: "store",
+        publishChannels: this.getPublishChannels(),
+        type,
         publishType: this.getPublishType(),
-        id: '',
-        articleId: '',
+        id,
+        articleId,
         category_id: category
       }).then((res) => {
         this.setState({ isLoading: false });
@@ -83,8 +109,22 @@ class FooterSection extends React.Component {
           onPost();
         }
         closeModal();
+        notification.success({
+          message: 'Done!',
+          description: 'The post has been scheduled'
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        closeModal();
+        FunctionModal({
+          type: 'error',
+          title: 'Error',
+          content: 'Something went wrong when trying to schedule your post, please try again later.'
+        });
       });
     } catch(error) {
+      console.log(error);
       this.setState({ isLoading: false });
       closeModal();
     }

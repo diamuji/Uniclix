@@ -27,6 +27,7 @@ class ScheduledPosts extends React.Component {
       isLoading: false,
       posts: [],
       calendarDisplay: 'Week',
+      resetDates: true,
       startDate: moment().tz(props.timezone).startOf('week'),
       endDate: moment().tz(props.timezone).endOf('week')
     }
@@ -43,21 +44,21 @@ class ScheduledPosts extends React.Component {
     }
   }
 
-  flattenPosts = (items) => {
-    const flattenedPosts = [];
-    items.forEach(posts => flattenedPosts.push(...posts))
-
-    return flattenedPosts;
-  }
-
   fetchPosts = () => {
     const { startDate, endDate } = this.state;
     this.setState({ isLoading: true });
 
+    // We need to add to extra days because the backend returns the event
+    // taking into account the UTC date and no the selected timezone. This
+    // provokes to some dates to not appear when they should. By increasing the
+    // requested range, we make sure to get all the event of the given period.
+    const cloneStart = startDate.clone().subtract(1, 'days'),
+      cloneEnd = endDate.clone().add(1, 'days');
+
     try {
-      scheduledPosts(startDate.format('YYYY-MM-DD'), endDate.format('YYYY-MM-DD'))
+      scheduledPosts(cloneStart.format('YYYY-MM-DD'), cloneEnd.format('YYYY-MM-DD'))
         .then((response) => {
-            const posts = this.flattenPosts(response.items);
+            const posts = response.items;
             this.setState({
                 posts,
                 isLoading: false,
@@ -79,12 +80,12 @@ class ScheduledPosts extends React.Component {
     });
   };
 
-  onPeriodChange = (value) => {
-    this.setState({ calendarDisplay: value });
+  onPeriodChange = (calendarDisplay, resetDates = true) => {
+    this.setState({ calendarDisplay, resetDates });
   };
 
   render() {
-    const { startDate, endDate, calendarDisplay, posts, isLoading } = this.state;
+    const { startDate, endDate, calendarDisplay, posts, isLoading, resetDates } = this.state;
     const { timezone } = this.props;
 
     return (
@@ -95,7 +96,9 @@ class ScheduledPosts extends React.Component {
               startDate={startDate}
               endDate={endDate}
               selectedPeriod={calendarDisplay}
+              timezone={timezone}
               onDateChange={this.onDateChange}
+              resetDates={resetDates}
             />
             <Select value={calendarDisplay} onChange={this.onPeriodChange}>
               {
@@ -109,6 +112,8 @@ class ScheduledPosts extends React.Component {
             timezone={timezone}
             startDate={startDate}
             fetchPosts={this.fetchPosts}
+            onDateChange={this.onDateChange}
+            onPeriodChange={this.onPeriodChange}
           />
         </div>
         <div>

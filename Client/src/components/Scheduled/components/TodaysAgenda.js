@@ -3,7 +3,7 @@ import moment from 'moment';
 import { connect } from 'react-redux';
 
 const TodaysAgenda = ({ posts, timezone, channelsList }) => {
-  const currentDate = moment().tz(timezone);
+  const currentDate = timezone ? moment().tz(timezone) : moment();
 
   const filterTodaysByTimezone = (post) => {
     const { payload: { scheduled: { publishUTCDateTime } } } = post;
@@ -37,12 +37,15 @@ const TodaysAgenda = ({ posts, timezone, channelsList }) => {
                     </div>
                   </div>
                   <div className="content">
-                    {post.content}
+                  { post.content ?
+                      `${(post.content).substring(0, 200)}${post.content.length > 200 ? '...' : ''}` :
+                      ''
+                  }
                   </div>
                   <div className="event-channels">
                     {
                       channelsList
-                        .filter(channel => post['channel_id'] === channel.id)
+                        .filter(channel => post['channel_ids'] === channel.id)
                         .map(({ type, avatar }, index) => (
                           <div key={`${type}-${index}`}>
                             <img src={avatar} />

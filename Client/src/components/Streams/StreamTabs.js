@@ -11,6 +11,9 @@ import { getStreams, setRefreshRate, selectTab, positionTab, addTab, deleteTab, 
 import StreamItems from "./StreamItems";
 import StreamInitiator from "./StreamInitiator";
 import Loader from "../Loader";
+import Compose from './../Compose';
+import Modal from 'react-modal';
+
 const { Option } = Select;
 
 const tabsClassNames = {
@@ -50,6 +53,8 @@ class StreamTabs extends Component {
         streamMaker: localStorage.getItem("streamMaker") === 'false' ? false : true,
         selectedSocial: '',
         selectedAccountId: '',
+        isClosedTab: false,
+        closeTab:'',
     };
 
     componentDidMount() {
@@ -211,8 +216,27 @@ class StreamTabs extends Component {
     }
 
     shouldTabClose(e, key) {
-        console.log('should tab close', e, key);
-        return window.confirm('Closing this tab will remove the streams associated with it. Are you sure?');
+        this.setState({
+            isClosedTab: true,
+            closeTab: key
+        });
+    }
+
+    handleConfirmClose() {
+        let key = this.state.closeTab;
+        let currentTabs = this.state.tabs;
+        let tabs = currentTabs.filter(item => item.key != key);
+        if (key == this.state.selectedTab) {
+            let index = currentTabs.findIndex(item => item.key == key);
+            if (index == currentTabs.length - 1) {
+                this.setState({selectedTab: currentTabs[index - 1]["key"]});
+            } else {
+                this.setState({selectedTab: currentTabs[index + 1]["key"]});
+            }
+        }
+
+        this.handleTabClose(null, key, tabs);
+        this.setState({ isClosedTab: false });
     }
 
     handleAddStream = () => {
@@ -349,7 +373,7 @@ class StreamTabs extends Component {
         return (
             <div>
                 <UpgradeAlert isOpen={this.state.forbidden && !this.state.loading} goBack={true} setForbidden={this.setForbidden} />
-
+                <Compose />
                 {!this.state.streamMaker && <button onClick={this.toggleStreamMaker} className="streammaker-btn">+</button>}
 
                 {this.state.loading && <Loader />}
@@ -362,7 +386,6 @@ class StreamTabs extends Component {
                             tabsStyles={tabsStyles}
                             selectedTab={this.state.selectedTab ? this.state.selectedTab : 'tab2'}
                             onTabSelect={this.handleTabSelect.bind(this)}
-                            onTabClose={this.handleTabClose.bind(this)}
                             onTabAddButtonClick={this.handleTabAddButtonClick.bind(this)}
                             onTabPositionChange={this.handleTabPositionChange.bind(this)}
                             shouldTabClose={this.shouldTabClose.bind(this)}
@@ -385,6 +408,22 @@ class StreamTabs extends Component {
                                 <MenuItem primaryText="Cancel" onClick={this.cancelContextMenu.bind(this)} />
                             </Menu>
                         </div>
+
+                        {!!this.state.isClosedTab && 
+                            <Modal
+                            ariaHideApp={false}
+                            className="billing-profile-modal"
+                            isOpen={!!this.state.isClosedTab}
+                            >
+                                <div className="modal-title">{`Attention`}</div>
+                                <div className="modal-contents">{`Do you wish to delete this tab?`}</div>
+                                <div style={{float:'right'}}>
+                                    <button onClick={() => this.setState({isClosedTab:false})} className="cancelBtn" >No</button>
+                                    <button onClick={() => this.handleConfirmClose()} className="cancelBtn" >Yes</button>
+                                </div>
+                            </Modal>
+                        }
+                            
                         <Dialog
                             title="Change tab name"
                             ref="dialog"
